@@ -1,0 +1,9 @@
+services:
+  node_front:
+    build: D:\docker\frontend\nodejs
+    volumes:
+      - .\name_project:/code
+    command: yarn run build
+    ports:
+      - "8020:8080"
+ 

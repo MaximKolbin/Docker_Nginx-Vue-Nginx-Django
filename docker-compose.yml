@@ -1,0 +1,85 @@
+version: '3'
+services:
+  nginx-front:
+    image: nginx:1.17.8
+    networks:
+      net:
+        ipv4_address: 172.16.0.2
+    restart: always
+    expose:
+      - 8080
+    ports:
+      - "8080:8080"
+    volumes:
+        - ./docker/frontend/nginx/conf/front_conf.conf:/etc/nginx/conf.d/front_conf.conf
+        - ./project/Frontend/name_project/dist:/srv/www/dist
+    
+      
+  nginx-back:
+    image: nginx:1.17.8
+    networks:
+      net:
+        ipv4_address: 172.16.0.3
+    restart: always
+    ports:
+      - "8008:8080"
+    volumes:
+      - ./project/static:/srv/www/project/static
+      - ./project/media:/srv/www/project/media
+      - ./project/logs:/srv/www/project/logs
+      - ./docker/backend/nginx:/etc/nginx/conf.d
+    depends_on:
+      - django_back
+
+  django_back:
+    build: .\docker\backend\python
+    command: "gunicorn -c gunicorn.py ASU.wsgi"
+    volumes:
+     - .\project\Backend:/srv/www/project
+    networks:
+      net:
+        ipv4_address: 172.16.0.4
+    ports:
+      - 8000:8000
+ s
+  pgAdmin:
+    restart: always
+    image: dpage/pgadmin4
+    ports:
+      - "8001:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 1234@admin.com
+      PGADMIN_DEFAULT_PASSWORD: 1234
+    volumes:
+      - .\docker\backend\postgres\pgadmin:/var/lib/pgadmin
+    networks:
+      net:
+        ipv4_address: 172.16.0.6
+  postgres:
+    restart: always
+    image: postgres
+    container_name: "postgres_container"
+    ports:
+      - "5400:5432"
+    environment:
+      - PGDATA=/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234567
+      POSTGRES_DB: ASU
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      net:
+        ipv4_address: 172.16.0.7
+
+volumes:
+  pgdata:
+    external: true
+
+networks:
+  net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.0.0/24
